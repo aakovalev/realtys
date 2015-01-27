@@ -4,8 +4,8 @@
 <#list specials as special>
      <li>
          <div>
-             <div class="preview"
-                  style="background: url('<@spring.url '/resources/thumbs/s${special.image}'/>') no-repeat center center;">
+             <div class="preview" onclick="javascript:window.open('/estate/${special.estateId?string.computer}');"
+                  style="cursor: pointer; background: url('<@spring.url '/resources/thumbs/s${special.image}'/>') no-repeat center center;">
              </div>
              <p>
              <#if special.rooms?? && special.rooms = 99>Дом

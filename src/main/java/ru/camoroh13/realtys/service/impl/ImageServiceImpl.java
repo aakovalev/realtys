@@ -56,6 +56,7 @@ public class ImageServiceImpl implements ImageService {
   @Override
   public void markImage(String srcImageFileName, String waterMarkImageFileName, float alpha, int mark_position) {
       System.out.println("Image - watemark " + srcImageFileName + " - " + waterMarkImageFileName);
+
       try {
           File srcImageFile = new File(srcImageFileName);
           if (!srcImageFile.exists()) return;
@@ -71,6 +72,7 @@ public class ImageServiceImpl implements ImageService {
       } catch (IOException e) {
           e.printStackTrace();
       }
+
   }
 
     private BufferedImage drawWaterMark(BufferedImage srcImage, BufferedImage markImage, float alpha) {

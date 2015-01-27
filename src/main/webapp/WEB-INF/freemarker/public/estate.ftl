@@ -80,11 +80,122 @@
             <span>
                 <h2>Описание:</h2>
                 ${estate.benefits}
-            </span>
+            </span><br/>
         </td>
     </tr>
 </table>
+<div id="map" style="width:480px; height:300px; border: 1px solid #bcb9b4;"></div>
 <script type="text/javascript">
     document.title = "${estate.estateCategory.name}: ${estate.address}. (код: ${estate.code})";
+</script>
+
+<script type="text/javascript">
+    ymaps.ready(init);
+    var myMap;
+
+    function showOnMap(address, district, image, rooms, price, link) {
+        var addressContainDelimiters = address.indexOf("/") >= 0 || address.indexOf("\\") >= 0;
+        if (addressContainDelimiters) {
+            geocodeComplexAddress(address, district, image, rooms, price, link);
+        }
+        else {
+            geocodeSimpleAddress(address, district, image, rooms, price, link);
+        }
+    }
+
+    function geocodeComplexAddress(address) {
+        var delimiter = "/";
+
+        if (address.indexOf("/") == -1) {
+            delimiter = "\\";
+        }
+
+        var firstStreet = address.substring(0, address.indexOf(delimiter));
+        var secondStreet = address.substring(address.indexOf(delimiter) + 1, address.length);
+
+        if (hasNumbers(firstStreet)) {
+            geocodeSimpleAddress(firstStreet);
+        }
+        else {
+            // do crazy stuff: calculating intersection of streets via yandex routing facility
+            // might not produce the results we want probably...
+            var coordinates;
+            ymaps.route(['Самара, ' + firstStreet, 'Самара, ' + secondStreet]).then(function (route) {
+                for (var i = 0; i < route.getPaths().getLength(); i++) {
+                    way = route.getPaths().get(i);
+                    segments = way.getSegments();
+                    var previousStreet = "";
+                    for (var j = 0; j < segments.length; j++) {
+                        var street = segments[j].getStreet();
+                        if (previousStreet) {
+                            // только что "повернули" значит начало сегмента есть пересечение улиц
+                            if (previousStreet != street) {
+                                var points = way.geometry;
+                                coordinates = points.get(segments[j].getPolylineStartIndex());
+                            }
+                        }
+                        previousStreet = street;
+                    }
+                }
+                if (coordinates) {
+                    putOnMap(coordinates, address);
+                }
+            });
+        }
+    }
+
+    function geocodeSimpleAddress(address) {
+        ymaps.geocode('Самара, ' + address, { results: 1 }).then(function (res) {
+            var foundLocation = res.geoObjects.get(0);
+            putOnMap(foundLocation.geometry.getCoordinates(), address);
+        }, handleError);
+    }
+
+    function putOnMap(coordinates, address, district, image, rooms, price, link) {
+        var placeMark = new ymaps.Placemark(coordinates)
+        myMap.geoObjects.add(placeMark);
+        adjustMapToLocation(coordinates);
+    }
+
+    function adjustMapToLocation(location) {
+        myMap.setCenter(location);
+        myMap.setZoom(16);
+        myMap.containter.fitToViewport();
+    }
+
+    function init() {
+        ymaps.geocode('Самара', { results: 1 }).then(function (res) {
+            // Выбираем первый результат геокодирования.
+            var samaraCity = res.geoObjects.get(0);
+            // Создаем карту с нужным центром.
+            myMap = new ymaps.Map("map", {
+                center: samaraCity.geometry.getCoordinates(),
+                zoom: 11
+            });
+
+            myMap.controls
+                // Кнопка изменения масштаба.
+                .add('zoomControl', { left: 5, top: 5 })
+                // Список типов карты
+                .add('typeSelector')
+                // Кнопка изменения масштаба - компактный вариант.
+                // Расположим её справа.
+                .add('smallZoomControl', { right: 5, top: 75 })
+                // Стандартный набор кнопок
+                .add('mapTools', { left: 35, top: 5 });
+
+            myMap.container.fitToViewport();
+
+            showOnMap('${estate.address}');
+        }, handleError);
+    }
+
+    function hasNumbers(str) {
+        return /\d/.test(str)
+    }
+
+    function handleError() {
+        // do nothing
+    }
 </script>
 <#include "common/footer.ftl">

@@ -3,6 +3,7 @@ package ru.camoroh13.realtys.service;
 import ru.camoroh13.realtys.domain.Estate;
 
 import java.io.File;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -33,7 +34,7 @@ public interface EstateService {
      * @param maxPrice максимальная цена
      * @return
      */
-    public List<Estate> find(Integer categoryId, Integer typeId, Integer districtId,
+    public List<Estate> find(Integer categoryId, Integer typeId, List<Integer> districtIds,
                              Integer rooms, Integer minPrice, Integer maxPrice,
                              Integer desc, String orderBy,
                              Integer start, Integer limit);
@@ -44,4 +45,7 @@ public interface EstateService {
 
     public Long count();
 
+    public Estate getByCode(String code);
+
+    void deleteEstatesAddedEarlierThan(Date cutDate);
 }

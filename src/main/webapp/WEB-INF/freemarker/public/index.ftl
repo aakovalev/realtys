@@ -6,7 +6,7 @@
      <div id="leftContainer">
          <h2>Список объявлений:</h2>
          <#if estateList?size == 0>
-             <span id="emptyEstateList">Список объявлений пуст.</span>
+             <span id="emptyEstateList">Не найдено ни одного объявления соответствующего параметрам поиска</span>
          <#else>
             <div id="estateListDiv">
             <#include "../estate/estatePublicList.ftl">

@@ -46,27 +46,30 @@
                     </select>
                 </nobr>
                 <br/>
-                <label for="district">Район: </label>
-                <select name="districtId" id="district" class="secondSel">
-                    <option value="0">Все</option>
+                <label>Район:</label>
+
                 <#list districtList as estateDistrict>
-                    <#assign selectedAttribute = "">
-                    <#if districtId?? && districtId = estateDistrict.districtId>
-                        <#assign selectedAttribute="selected='selected'"/>
+                <div class="block">
+                    <label/>
+                    <#assign checkedAttribute = "">
+                    <#if districtIds?? && districtIds?seq_contains(estateDistrict.districtId)>
+                        <#assign checkedAttribute="checked"/>
                     </#if>
-                    <option value="${estateDistrict.districtId}" ${selectedAttribute}>
-                        ${estateDistrict.name}
-                    </option>
+                    <input style="border: none;" type="checkbox" name="districtId" value="${estateDistrict.districtId}" ${checkedAttribute}>${estateDistrict.name}
+                </div>
                 </#list>
-                </select>
-                <span class="title">Стоимость:</span>
+
+                <span class="title">Стоимость</span>
                 <br/>
-                <nobr><label for="minPrice">От: </label>
-                    <input name="minPrice" id="minPrice" value="<#if minPrice?? && (minPrice > 0)>${minPrice}</#if>"/></nobr>
+                <nobr>
+                    <label for="minPrice">От: </label>
+                    <input style="width: 55px;" name="minPrice" id="minPrice" value="<#if minPrice?? && (minPrice > 0)>${minPrice}</#if>"/>
+                    <label for="maxPrice">До: </label>
+                    <input style="width: 55px;" name="maxPrice" id="maxPrice" value="<#if maxPrice?? && (maxPrice > 0)>${maxPrice}</#if>"/>
+                </nobr>
                 <br/>
-                <nobr><label for="maxPrice">До: </label>
-                    <input name="maxPrice" id="maxPrice" value="<#if maxPrice?? && (maxPrice > 0)>${maxPrice}</#if>"/></nobr>
-                <br/>
+                <label for="code">Код: </label>
+                <input style="width: 134px;" id="code" name="code" type="text" value="">
                 <input name="order" type="hidden" value="2"/>
                 <input name="orderBy" type="hidden" value="date"/>
                 <div id="findDiv">

@@ -26,6 +26,12 @@
          <h2>Список объявлений:</h2>
          <div id="addEstate">
             <a href="#" id="addEstateBtn"><img src="<@spring.url '/resources/images/add.png'/>" />Добавить</a>
+            <a href="#" id="deleteEstateBtn"><img src="<@spring.url '/resources/images/delete.png'/>" />Удалить</a>
+             <form id="deleteEstateForm" action="<@spring.url '/admin/estate/deleteEstateBulk'/>" method="POST" enctype="multipart/form-data">
+                 <label for="cutDate">Удалить объявления добавленные до даты:</label><br />
+                 <input id="cutDate" type="text" name="dateStamp"><br />
+                 <input type="submit" value="Удалить" id="deleteEstateSubmit" /><input type="button" value="Закрыть" id="deleteEstateFormClose" />
+             </form>
              <form id="addEstateForm" action="<@spring.url '/admin/estate/addEstate'/>" method="POST" enctype="multipart/form-data">
                  <label for="addCode">Код:</label><br />
                  <input id="addCode" type="text" name="code"><br />

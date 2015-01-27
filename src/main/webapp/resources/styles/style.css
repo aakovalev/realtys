@@ -331,11 +331,11 @@ textarea.tinymce {
     float: left;
 }
 
-#addEstate {
+#addEstate, #deleteEstate {
     position: relative;
 }
 
-#addEstateForm {
+#addEstateForm, #deleteEstateForm {
     position: absolute;
     display: none;
     top: 3px;

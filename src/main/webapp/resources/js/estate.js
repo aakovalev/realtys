@@ -81,6 +81,12 @@ $(document).ready(function () {
         $('#addEstateForm').show();
     });
 
+    $('#cutDate').attachDatepicker();
+
+    $('#deleteEstateBtn').click(function () {
+        $('#deleteEstateForm').show();
+    });
+
     $('#addEstateSubmit').click(function() {
         var url = $('#addEstateForm').attr("action");
         $.ajax({
@@ -107,6 +113,10 @@ $(document).ready(function () {
 
     $('#closeEstateSubmit').click(function() {
         $('#addEstateForm').hide();
+    });
+
+    $('#deleteEstateFormClose').click(function() {
+        $('#deleteEstateForm').hide();
     });
 
 });

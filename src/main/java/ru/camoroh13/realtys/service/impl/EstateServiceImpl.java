@@ -64,32 +64,41 @@ public class EstateServiceImpl implements EstateService {
     }
 
     @Override
+    public void deleteEstatesAddedEarlierThan(Date cutDate) {
+        estateDAO.delete(estateDAO.findEstatesAddedEarlierThan(cutDate));
+    }
+
+    @Override
     public List<Estate> list() {
         return estateDAO.list();
     }
 
     @Override
-    public List<Estate> find(Integer categoryId, Integer typeId, Integer districtId,
+    public List<Estate> find(Integer categoryId, Integer typeId, List<Integer> districtIds,
                              Integer rooms, Integer minPrice, Integer maxPrice,
                              Integer desc, String orderBy,
                              Integer start, Integer limit) {
         EstateCategory estateCategory = null;
         EstateType estateType = null;
-        District district = null;
+        List<District> districts = new ArrayList<District>();
         if (categoryId != null && categoryId > 0) {
             estateCategory = estateCategoryDAO.get(categoryId);
         }
         if (typeId != null && typeId > 0) {
             estateType = estateTypeDAO.get(typeId);
         }
-        if (districtId != null && districtId > 0) {
-            district = districtDAO.get(districtId);
+        if (districtIds != null && districtIds.size() > 0) {
+            for (Integer districtId: districtIds) {
+                if (districtId != null && districtId > 0) {
+                    districts.add(districtDAO.get(districtId));
+                }
+            }
         }
         if (desc == null) {
             desc = 0;
         }
 
-        List<Estate> specials = estateDAO.find(estateCategory, estateType, district, rooms, minPrice, maxPrice, desc, orderBy, start, limit);
+        List<Estate> specials = estateDAO.find(estateCategory, estateType, districts, rooms, minPrice, maxPrice, desc, orderBy, start, limit);
 
         return specials;
     }
@@ -140,6 +149,11 @@ public class EstateServiceImpl implements EstateService {
     @Override
     public Long count() {
         return estateDAO.findLearnerCount();
+    }
+
+    @Override
+    public Estate getByCode(String code) {
+        return estateDAO.getByCode(code);
     }
 
     private List<Estate> parseEstates(Document doc, Map<Integer, EstateCategory> categories,

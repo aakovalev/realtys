@@ -8,7 +8,7 @@
 	<meta name="keywords"
 		content="${metaKeywords}" />
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <link href="<@spring.url '/resources/styles/stylePublic.css'/>" type="text/css" rel="stylesheet" />
+    <link href="<@spring.url '/resources/styles/stylePublic.css?v1.1'/>" type="text/css" rel="stylesheet" />
     <link href="<@spring.url '/resources/styles/skins/tango/skin.css'/>" type="text/css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="<@spring.url '/resources/images/favicon.png'/>" />
     <script type="text/javascript" src="<@spring.url '/resources/js/jquery.min.js'/>"></script>
@@ -18,6 +18,7 @@
   <link rel="stylesheet" type="text/css" href="<@spring.url '/resources/styles/jquery.ad-gallery.css'/>">
   <script type="text/javascript" src="<@spring.url '/resources/js/jquery.easing.1.3.js'/>"></script>
   <script type="text/javascript" src="<@spring.url '/resources/js/jquery.ad-gallery.js'/>"></script>
+  <script src="http://api-maps.yandex.ru/2.0/?load=package.standard&lang=ru-RU" type="text/javascript"></script>
 
   <script type="text/javascript">
   $(function() {
@@ -283,6 +284,18 @@
   VK.init({apiId: 2632809, onlyWidgets: true});
 </script>
 
+<script type="text/javascript">
+    function externalLinks() {
+        links = document.getElementsByTagName("a");
+        for (i = 0; i < links.length; i++) {
+            link = links[i];
+            if (link.getAttribute("href") && link.getAttribute("rel") == "external")
+                link.target = "_blank";
+        }
+    }
+    window.onload = externalLinks;
+</script>
+
 </head>
 <body>
     <div id="loader">
@@ -309,7 +322,7 @@
                         <td colspan="2">Офис (с 9.00 до 19.00):</td>
 					</tr>
                     <tr>
-                        <td colspan="2"><span class="titleRed">8 (846) 21-21-321</span></td>
+                        <td colspan="2"><span class="titleRed">8 (846) 200-21-20</span></td>
                     </tr>
                     <tr>
                         <td>24 часа:</td>

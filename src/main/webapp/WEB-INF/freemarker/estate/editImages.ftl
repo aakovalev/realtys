@@ -27,7 +27,7 @@
          <h2>Список картинок:</h2>
          <ul style="list-style: none;">
              <li>
-                <img src="<@spring.url '/resources/thumbs/${estate.image!"noimage.jpg"}'/>"
+                <img src="<@spring.url '/resources/thumbs/s${estate.image!"noimage.jpg"}'/>"
                                        title="" longdesc="" alt="">
                 <a title="Удалить #${estate.estateId?c}" href="<@spring.url '/admin/estate/deleteImage/${estate.estateId?c}'/>"><img
                     src="<@spring.url '/resources/images/delete.png'/>" alt="Удалить"/></a>

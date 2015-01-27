@@ -17,6 +17,18 @@
 	<!--script src="<@spring.url '/resources/js/jquery.treeview.edit.js'/>" type="text/javascript"></script>
 	<!--script src="<@spring.url '/resources/js/jquery.treeview.async.js'/>" type="text/javascript"></script-->
 
+    <script type="text/javascript">
+        function externalLinks() {
+            links = document.getElementsByTagName("a");
+            for (i = 0; i < links.length; i++) {
+                link = links[i];
+                if (link.getAttribute("href") && link.getAttribute("rel") == "external")
+                    link.target = "_blank";
+            }
+        }
+        window.onload = externalLinks;
+    </script>
+
 	<script type="text/javascript">
 	function initTrees() {
 		$("#categoryList").treeview({
@@ -39,7 +51,7 @@
 
 	});
 
-</script>
+    </script>
 
     <script src="<@spring.url '/resources/js/uploadify/swfobject.js'/>"></script>
     <script src="<@spring.url '/resources/js/uploadify/jquery.uploadify.v2.1.4.min.js'/>"></script>
@@ -96,7 +108,7 @@
 	     }*/
 	</script>
 
-<script type="text/javascript" src="<@spring.url '/resources/js/estate.js'/>"></script>
+<script type="text/javascript" src="<@spring.url '/resources/js/estate.js?v=1.05'/>"></script>
 <script type="text/javascript" src="<@spring.url '/resources/js/tiny_mce/jquery.tinymce.js'/>"></script>
 <script type="text/javascript">
         $(function() {

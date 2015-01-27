@@ -7,6 +7,7 @@ import ru.camoroh13.realtys.domain.Estate;
 import ru.camoroh13.realtys.domain.EstateCategory;
 import ru.camoroh13.realtys.domain.EstateType;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -40,7 +41,7 @@ public interface EstateDAO {
 
     @Transactional
     public List<Estate> find(EstateCategory estateCategory, EstateType estateType,
-                             District district, Integer rooms,
+                             List<District> districts, Integer rooms,
                              Integer minPrice, Integer maxPrice,
                              Integer desc, String orderBy,
                              Integer start, Integer limit
@@ -51,5 +52,7 @@ public interface EstateDAO {
 
     @Transactional
     public Long findLearnerCount() throws DataAccessException;
-    
+
+    @Transactional
+    public List<Estate> findEstatesAddedEarlierThan(Date date);
 }

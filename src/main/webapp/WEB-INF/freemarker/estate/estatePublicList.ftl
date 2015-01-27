@@ -68,17 +68,17 @@
 <#list estateList as estate>
     <tr>
         <td>
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.code}
             </a>
         </td>
         <td colspan="2">
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.date?string("dd.MM.yyyy")}
             </a>
         </td>
         <td><div style="width: 100px; word-wrap: break-word;">
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.address}
             </a></div>
         </td>
@@ -86,7 +86,7 @@
             <#if (estate.estateType.estateTypeId == 2 && estate.rooms == 0)>
                 -
             <#else>
-                <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+                <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
                 <#if (estate.rooms = 0 || estate.rooms = 98)>
                 <!--
                     0 и 98 специальные значения, которые обозначают что предлагается комната, а не квартира
@@ -102,17 +102,17 @@
             </#if>
         </td>
         <td colspan="2">
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.square}
             </a>
         </td>
         <td colspan="2">
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.floor}/${estate.maxFloor}
             </a>
         </td>
         <td colspan="2">
-            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}">
+            <a href="<@spring.url '/estate/'/>${estate.estateId?string.computer}" rel="external">
             ${estate.price}
             </a>
         </td>
@@ -121,8 +121,9 @@
             <#if estate.image?? && (estate.image?trim?length > 0)>
                 <#assign estateImageName = estate.image/>
             </#if>
-            <img style="border:1px solid #bcb9b4;"
-                 src="<@spring.url '/resources/thumbs/s${estateImageName}'/>" width="60" height="60"/>
+            <img style="border:1px solid #bcb9b4; cursor: pointer;"
+                 src="<@spring.url '/resources/thumbs/s${estateImageName}'/>" width="60" height="60"
+                 onclick="javascript:window.open('/estate/${estate.estateId?string.computer}');"/>
         </td>
     </tr>
 </#list>
@@ -132,9 +133,15 @@
 <#list 0..pageCount as i>
     <#assign pageNumber = i + 1>
     <#if pageId = i>
-    ${pageNumber}&nbsp;&nbsp;
-    <#else >
-    <a href="<@spring.url '/search'/>?catehoryId=${categoryId?string.computer}&typeId=${typeId?string.computer}&districtId=${districtId?string.computer}&minPrice=${minPrice?string.computer}&maxPrice=${maxPrice?string.computer}&rooms=${rooms?string.computer}&order=${order}&orderBy=${orderBy}&pageId=${i}">${pageNumber}</a>&nbsp;&nbsp;
+        ${pageNumber}&nbsp;&nbsp;
+    <#else>
+        <#assign districtIdParameters="">
+        <#if districtIds??>
+            <#list districtIds as theDistrictId>
+                <#assign districtIdParameters = districtIdParameters + "&districtId=" + theDistrictId>
+            </#list>
+        </#if>
+        <a href="<@spring.url '/search'/>?catehoryId=${categoryId?string.computer}&typeId=${typeId?string.computer}${districtIdParameters}&minPrice=${minPrice?string.computer}&maxPrice=${maxPrice?string.computer}&rooms=${rooms?string.computer}&order=${order}&orderBy=${orderBy}&pageId=${i}">${pageNumber}</a>&nbsp;&nbsp;
     </#if>
 </#list>
 </div>

@@ -3,9 +3,7 @@ package ru.camoroh13.realtys.dao.impl;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Order;
-import org.hibernate.criterion.Property;
+import org.hibernate.criterion.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.orm.hibernate3.HibernateCallback;
@@ -18,6 +16,7 @@ import ru.camoroh13.realtys.domain.EstateCategory;
 import ru.camoroh13.realtys.domain.EstateType;
 
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 import static org.hibernate.criterion.CriteriaSpecification.DISTINCT_ROOT_ENTITY;
@@ -76,7 +75,7 @@ public class EstateDAOImpl implements EstateDAO {
     }
 
     @Override
-    public List<Estate> find(final EstateCategory estateCategory, final EstateType estateType, final District district,
+    public List<Estate> find(final EstateCategory estateCategory, final EstateType estateType, final List<District> districts,
                              final Integer rooms, final Integer minPrice, final Integer maxPrice,
                              final Integer desc, final String orderBy,
                              final Integer start, final Integer limit) {
@@ -91,8 +90,12 @@ public class EstateDAOImpl implements EstateDAO {
                 if (estateType != null) {
                     criteria.add(Property.forName("estateType").eq(estateType));
                 }
-                if (district != null) {
-                    criteria.add(Property.forName("district").eq(district));
+                if (districts != null) {
+                    Disjunction hasAnyOfSpecifiedDistricts = Restrictions.disjunction();
+                    for (District district: districts) {
+                        hasAnyOfSpecifiedDistricts.add(Restrictions.eq("district", district));
+                    }
+                    criteria.add(hasAnyOfSpecifiedDistricts);
                 }
                 if (rooms >= 0) {
                     criteria.add(Property.forName("rooms").eq(rooms));
@@ -135,6 +138,13 @@ public class EstateDAOImpl implements EstateDAO {
     public List<Estate> listSpecial() {
         DetachedCriteria criteria = DetachedCriteria.forClass(Estate.class);
         criteria.add(Property.forName("special").eq(true));
+        return template.findByCriteria(criteria);
+    }
+
+    @Override
+    public List<Estate> findEstatesAddedEarlierThan(Date cutDate) {
+        DetachedCriteria criteria = DetachedCriteria.forClass(Estate.class);
+        criteria.add(Property.forName("date").le(cutDate));
         return template.findByCriteria(criteria);
     }
 }

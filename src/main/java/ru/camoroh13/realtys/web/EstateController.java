@@ -8,18 +8,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
-import ru.camoroh13.realtys.domain.District;
-import ru.camoroh13.realtys.domain.Estate;
-import ru.camoroh13.realtys.domain.EstateCategory;
-import ru.camoroh13.realtys.domain.EstateType;
+import ru.camoroh13.realtys.domain.*;
 import ru.camoroh13.realtys.service.EstateService;
 import ru.camoroh13.realtys.service.FeedbackService;
 import ru.camoroh13.realtys.service.ImageService;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.*;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.Format;
@@ -28,6 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static java.util.Arrays.asList;
 
 /**
  * User: Konstantin
@@ -38,9 +41,10 @@ import java.util.logging.Logger;
 @Controller
 public class EstateController extends HelperController implements ServletContextAware {
     private static final Logger LOG = Logger.getLogger(EstateController.class.getName());
-    
+
     private static final long MIN_FILE_SIZE = 50;
     public static final String DEFAULT_TEXT = " ";
+    private static final int MAX_WIDTH = 768;
 
     @Autowired
     EstateService estateService;
@@ -97,7 +101,7 @@ public class EstateController extends HelperController implements ServletContext
                 ex.printStackTrace();
             }
         }
-        List<Estate> estateList = estateService.find(0, 0, 0, -1, 0, 0, desc, orderBy, start , LIMIT);
+        List<Estate> estateList = estateService.find(0, 0, asList(0), -1, 0, 0, desc, orderBy, start , LIMIT);
         map = makeSearchForm(map);
         map.put("estateList", estateList);
         map.put("districtList", districtList);
@@ -128,66 +132,184 @@ public class EstateController extends HelperController implements ServletContext
                                  HttpServletRequest request,
                                  @PathVariable("estateId") Integer estateId) {
         Estate estate = estateService.get(estateId);
-        if (estate.getBenefits() == null) {
-            estate.setBenefits("");
-        }
-
-        MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
-        Iterator<String> itr = multipartRequest.getFileNames();
-        while ( itr.hasNext()) {
-            System.out.println("Uploaded file name : " + itr.next() );
-        }
-        MultipartFile file = multipartRequest.getFile("Filedata");
+        InputStream imageInputStream = null;
         try {
-            if (file != null && file.getSize() > MIN_FILE_SIZE) {
-                final String PATH = servletContext.getRealPath("/resources/thumbs") + "/";
-                System.out.println("PATH = " + PATH);
-                String fileName = new Date().getTime() + "";
-                String smallFile = "s" + fileName + ".png";
-                fileName = fileName + ".png";
-                File newFile = new File(PATH + fileName);
-                File newSmallFile = new File(PATH + smallFile);
+            imageInputStream = getImageInputStream(request);
 
-                System.out.println("Image file info : " + newFile.getName() + " - " + newSmallFile.getName());
+            String id = getUniqueStringId();
+            String smallImageFileName = generateFileNameForMiniatureImage(id);
+            String imageFileName = generateFileNameForFullSizeImage(id);
 
-                OutputStream os = new FileOutputStream(newFile);
-                OutputStream os2 = new FileOutputStream(newSmallFile);
-                IOUtils.copy(file.getInputStream(), os);
+            final String PATH = getPathToImages();
+            LOG.info("PATH = " + PATH);
+            File imageFile = new File(PATH + imageFileName);
+            File smallImageFile = new File(PATH + smallImageFileName);
 
-                if (estate.getImage() == null || "".equals(estate.getImage()) || Estate.NO_IMAGE.equals(estate.getImage()) ) {
-                    estate.setImage(fileName);
-                } else {
-                    List<ru.camoroh13.realtys.domain.Image> images = estate.getImages();
-                    if (images == null) {
-                        images = new LinkedList<ru.camoroh13.realtys.domain.Image>();
-                    }
-                    ru.camoroh13.realtys.domain.Image img = new ru.camoroh13.realtys.domain.Image();
-                    img.setImage(fileName);
-                    Long l = new Date().getTime();
-                    img.setEstate(estate);
-                    img.setImageId(Integer.parseInt( l.toString().substring(0, l.toString().length() - 3) ));
-                    imageService.save(img);
-                    images.add(img);
-                    estate.setImages(images);
-                }
-                estateService.save(estate);
+            saveInputStreamToFile(imageInputStream, imageFile);
+            associateEstateAndImageFileName(estate, imageFileName);
+            createSmallImage(imageFile, smallImageFile);
+            imageService.markImage(PATH + imageFileName, PATH + "watemark.png", 1, 1);
 
-                BufferedInputStream is = new BufferedInputStream(new FileInputStream(newFile));
-                rescale(is, os2, 125, 125, "png");
-
-                is.close();
-                os2.close();
-                os.close();
-
-                imageService.markImage(PATH + fileName, PATH + "watemark.png", 1, 1);
-            }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.warning(e.getMessage());
+        } finally {
+            if (imageInputStream != null) {
+                try {
+                    imageInputStream.close();
+                } catch (IOException e) {
+                    LOG.warning("Failed to close input image stream");
+                }
+            }
         }
 
         map.put("sessionId", request.getSession().getId());
         map.put("estate", estate);
         return "estate/editImages";
+    }
+
+    private void associateEstateAndImageFileName(Estate estate, String imageFileName) {
+        if (estate.getImage() == null || "".equals(estate.getImage()) || Estate.NO_IMAGE.equals(estate.getImage())) {
+            estate.setImage(imageFileName);
+        } else {
+            List<ru.camoroh13.realtys.domain.Image> images = estate.getImages();
+            if (images == null) {
+                images = new LinkedList<ru.camoroh13.realtys.domain.Image>();
+            }
+            ru.camoroh13.realtys.domain.Image img = new ru.camoroh13.realtys.domain.Image();
+            img.setImage(imageFileName);
+            img.setEstate(estate);
+            img.setImageId(generateImageId());
+            imageService.save(img);
+            images.add(img);
+            estate.setImages(images);
+        }
+
+        if (estate.getBenefits() == null) {
+            estate.setBenefits("");
+        }
+
+        estateService.save(estate);
+    }
+
+    private InputStream getImageInputStream(HttpServletRequest request) throws IOException {
+        MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+        logUploadedFileNames(multipartRequest.getFileNames());
+        MultipartFile file = multipartRequest.getFile("Filedata");
+        if (file == null) {
+            throw new IOException("No file was uploaded");
+        }
+        if (file.getSize() <= MIN_FILE_SIZE) {
+            throw new IOException("Uploaded image file is too small");
+        }
+        return file.getInputStream();
+    }
+
+    private int generateImageId() {
+        String imgIdAsString = getUniqueStringId();
+        return Integer.parseInt(imgIdAsString.substring(0, imgIdAsString.length() - 3));
+    }
+
+    private void createSmallImage(File sourceImageFileName, File miniatureImageFileName) throws IOException {
+        BufferedInputStream is = null;
+        OutputStream os = null;
+        try {
+            is = new BufferedInputStream(new FileInputStream(sourceImageFileName));
+            os = new FileOutputStream(miniatureImageFileName);
+            rescale(is, os, 125, 125, "png");
+        }
+        finally {
+            if (is != null) {
+                is.close();
+            }
+            if (os != null) {
+                os.close();
+            }
+        }
+    }
+
+    private void logUploadedFileNames(Iterator<String> fileNames) {
+        Iterator<String> itr = fileNames;
+        while ( itr.hasNext()) {
+            System.out.println("Uploaded file name : " + itr.next() );
+        }
+    }
+
+    private String generateFileNameForFullSizeImage(String id) {
+        return id + ".png";
+    }
+
+    private String generateFileNameForMiniatureImage(String id) {
+        return generateFileNameForFullSizeImage("s" + id);
+    }
+
+    private String getUniqueStringId() {
+        return new Date().getTime() + "";
+    }
+
+    private void saveInputStreamToFile(InputStream input, File imageFile) throws IOException {
+        OutputStream os = null;
+        try {
+            os = new FileOutputStream(imageFile);
+            ImageInputStream imageInputStream = ImageIO.createImageInputStream(input);
+            ImageReader imageReader = getImageReader(imageInputStream);
+            imageReader.setInput(imageInputStream);
+            BufferedImage imageToSave = getImageToSave(imageReader);
+            ImageIO.write(imageToSave, "png", os);
+        }
+        catch (IOException e) {
+            LOG.warning("Failed to save uploaded image to file " + imageFile.getName());
+        }
+        finally {
+            if (os != null) {
+                os.close();
+            }
+        }
+    }
+
+    private BufferedImage getImageToSave(ImageReader imageReader) throws IOException {
+        BufferedImage imageToSave;
+        int imageIndex = 0;
+        if (imageReader.getWidth(imageIndex) > MAX_WIDTH) {
+            float imageAspectRatio = imageReader.getAspectRatio(imageIndex);
+            int width = MAX_WIDTH;
+            int height = (int) (width * imageAspectRatio);
+            imageToSave = subSampleImage(imageReader, width, height);
+        }
+        else {
+            imageToSave = imageReader.read(0);
+        }
+        return imageToSave;
+    }
+
+    private ImageReader getImageReader(ImageInputStream inputStream) {
+        return ImageIO.getImageReaders(inputStream).next();
+    }
+
+    public static BufferedImage subSampleImage(ImageReader imageReader, int x, int y) throws IOException {
+        // in our case we can assume that image is always one and as index starts from zero image index is also zero
+        int imageIndex = 0;
+        ImageReadParam imageReaderParams = imageReader.getDefaultReadParam();
+        Dimension d1 = new Dimension(imageReader.getWidth(imageIndex), imageReader.getHeight(imageIndex));
+        Dimension d2 = new Dimension(x, y);
+        int subSampling = (int) scaleSubSamplingMaintainAspectRatio(d1, d2);
+        imageReaderParams.setSourceSubsampling(subSampling, subSampling, 0, 0);
+        return imageReader.read(imageIndex, imageReaderParams);
+    }
+
+    public static long scaleSubSamplingMaintainAspectRatio(Dimension d1, Dimension d2) {
+        long subSampling = 1;
+
+        if (d1.getWidth() > d2.getWidth()) {
+            subSampling = Math.round(d1.getWidth() / d2.getWidth());
+        } else if (d1.getHeight() > d2.getHeight()) {
+            subSampling = Math.round(d1.getHeight() / d2.getHeight());
+        }
+
+        return subSampling;
+    }
+
+    private String getPathToImages() {
+        return servletContext.getRealPath("/resources/thumbs") + "/";
     }
 
     @RequestMapping("/")
@@ -217,7 +339,7 @@ public class EstateController extends HelperController implements ServletContext
             }
             specials.add(special);
         }
-        System.out.println("Specials size : " + specialsTemp.size() + " - " + specials.size() );
+        System.out.println("Specials size : " + specialsTemp.size() + " - " + specials.size());
         return specials;
     }
 
@@ -268,6 +390,7 @@ public class EstateController extends HelperController implements ServletContext
                 }
             }
         }
+
         Integer districtId = 0;
         if (params.containsKey("districtId")) {
             String districtIdS = request.getParameter("districtId");
@@ -279,6 +402,21 @@ public class EstateController extends HelperController implements ServletContext
                 }
             }
         }
+
+        List<Integer> districtIds = new ArrayList<Integer>();
+        if (params.containsKey("districtId")) {
+            String[] districtIdsAsStrings = request.getParameterValues("districtId");
+            if (districtIdsAsStrings != null && districtIdsAsStrings.length > 0) {
+                for (String districtIdAsString: districtIdsAsStrings) {
+                    try {
+                        districtIds.add(Integer.valueOf(districtIdAsString));
+                    } catch (NumberFormatException ex) {
+                        //
+                    }
+                }
+            }
+        }
+
         Integer rooms = -1;
         if (params.containsKey("rooms")) {
             String roomsS = request.getParameter("rooms");
@@ -327,9 +465,21 @@ public class EstateController extends HelperController implements ServletContext
                 ex.printStackTrace();
             }
         }
-        List<Estate> estateList = estateService.find(categoryId, typeId, districtId, rooms, minPrice, maxPrice, desc, orderBy, start, LIMIT);
+
+        List<Estate> estateList = estateService.find(categoryId, typeId, districtIds, rooms, minPrice, maxPrice, desc, orderBy, start, LIMIT);
+        int count = estateService.find(categoryId, typeId, districtIds, rooms, minPrice, maxPrice, desc, orderBy, 0, 0).size();
+
+        // search by code, override all other settings & searches
+        if (params.containsKey("code")) {
+            String code = request.getParameter("code");
+            if (!code.isEmpty()) {
+                Estate foundEstate = estateService.getByCode(code);
+                estateList = foundEstate == null ? Collections.<Estate>emptyList() : Arrays.asList(foundEstate);
+                count = estateList.size();
+            }
+        }
+
         map = makeSearchForm(map);
-        int count = estateService.find(categoryId, typeId, districtId, rooms, minPrice, maxPrice, desc, orderBy, 0, 0).size();
         map.put("specials", getSpecials());
         map.put("limit", LIMIT);
         map.put("pageId", pageId );
@@ -341,6 +491,7 @@ public class EstateController extends HelperController implements ServletContext
         map.put("categoryId", categoryId);
         map.put("typeId", typeId);
         map.put("districtId", districtId);
+        map.put("districtIds", districtIds);
         map.put("rooms", rooms);
         map.put("minPrice", minPrice);
         map.put("maxPrice", maxPrice);
@@ -399,6 +550,15 @@ public class EstateController extends HelperController implements ServletContext
         return "estate/estateList";
     }
 
+    @RequestMapping(value = "/admin/estate/deleteEstateBulk", method = RequestMethod.POST)
+    public String deleteEstateBulk(@RequestParam("dateStamp") String cutDateAsText, Map<String, Object> map) {
+        if (cutDateAsText != null && !cutDateAsText.isEmpty()) {
+            estateService.deleteEstatesAddedEarlierThan(toDate(cutDateAsText));
+        }
+        return "redirect:/admin/estate";
+    }
+
+
     @RequestMapping(value = "/admin/estate/edit/{estateId}", method = RequestMethod.POST)
     public String editSaveEstate(@RequestParam("estateCategoryId") Integer estateCategoryId,
                                  @RequestParam("estateTypeId") Integer estateTypeId,
@@ -454,7 +614,7 @@ public class EstateController extends HelperController implements ServletContext
             estate.setPrice(0);
         }
         if (estate.getCode() == null ) {
-            estate.setCode(new Date().getTime() + "");
+            estate.setCode(getUniqueStringId());
         }
         return estate;
     }
@@ -469,11 +629,11 @@ public class EstateController extends HelperController implements ServletContext
         MultipartFile file = multipartRequest.getFile("file");
         ru.camoroh13.realtys.domain.Image image = new ru.camoroh13.realtys.domain.Image();
         if (file != null && file.getSize() > MIN_FILE_SIZE) {
-            final String PATH = servletContext.getRealPath("/resources/thumbs") + "/";
-            String fileName = new Date().getTime() + "";
-            String smallFile = "s" + fileName + ".png";
+            final String PATH = getPathToImages();
+            String fileName = getUniqueStringId();
+            String smallFile = generateFileNameForMiniatureImage(fileName);
 
-            fileName = fileName + ".png";
+            fileName = generateFileNameForFullSizeImage(fileName);
             File newFile = new File(PATH + fileName);
             File newSmallFile = new File(PATH + smallFile);
 
